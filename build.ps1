@@ -27,6 +27,7 @@ Set-Location $PSScriptRoot
 
 Import-VisualStudioVars -VisualStudioVersion $vsver -Architecture $vcvarsarch
 
+# libiconv
 if($vs2008) {
     Set-Location .\libiconv\MSVC9
     $vcarch = If($x64) { "x64" } Else {"Win32"}
