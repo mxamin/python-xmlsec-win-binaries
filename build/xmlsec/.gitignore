@@ -45,6 +45,7 @@ include/xmlsec/gnutls/Makefile
 include/xmlsec/nss/Makefile
 include/xmlsec/openssl/Makefile
 include/xmlsec/private/Makefile
+include/xmlsec/version.h
 libtool
 man/Makefile
 src/Makefile
@@ -53,6 +54,7 @@ src/gnutls/Makefile
 src/nss/Makefile
 src/openssl/Makefile
 win32/apps_a.int/
+win32/binaries/
 win32/configure.txt
 win32/libxmlsec.int/
 win32/libxmlsec_a.int/
