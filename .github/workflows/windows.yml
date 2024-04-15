@@ -103,33 +103,47 @@ jobs:
       #     "ZLIB_INC=$zlibInc" | Out-File -FilePath $Env:GITHUB_ENV -Append
       #   shell: pwsh
 
-      - name: Build libxml2
-        run: |
-          Write-Host "ICONV_LIB: $env:ICONV_LIB"
-          Write-Host "ICONV_INC: $env:ICONV_INC"
-          Write-Host "ZLIB_LIB: $env:ZLIB_LIB"
-          Write-Host "ZLIB_INC: $env:ZLIB_INC"
+      # - name: Build libxml2
+      #   run: |
+      #     Write-Host "ICONV_LIB: $env:ICONV_LIB"
+      #     Write-Host "ICONV_INC: $env:ICONV_INC"
+      #     Write-Host "ZLIB_LIB: $env:ZLIB_LIB"
+      #     Write-Host "ZLIB_INC: $env:ZLIB_INC"
 
+      #     $iconvLib = Join-Path $env:GITHUB_WORKSPACE build\libiconv\MSVC16\x64\lib
+      #     $iconvInc = Join-Path $env:GITHUB_WORKSPACE build\libiconv\source\include
+      #     $zlibLib = Join-Path $env:GITHUB_WORKSPACE build\zlib
+      #     $zlibInc = Join-Path $env:GITHUB_WORKSPACE build\zlib
+
+      #     Set-Location .\libxml2\win32
+      #     cscript configure.js lib="$zlibLib;$iconvLib" include="$zlibInc;$iconvInc" vcmanifest=yes zlib=yes
+      #     # cscript configure.js lib="$env:ZLIB_LIB;$env:ICONV_LIB" include="$env:ZLIB_INC;$env:ICONV_INC" vcmanifest=yes zlib=yes
+      #     Start-Process -NoNewWindow -Wait nmake libxmla
+      #     $xmlLib = Join-Path (pwd) bin.msvc
+      #     $xmlInc = Join-Path (pwd) ..\include
+      #   shell: pwsh
+
+      - name: Build libxslt
+        run: |
           $iconvLib = Join-Path $env:GITHUB_WORKSPACE build\libiconv\MSVC16\x64\lib
           $iconvInc = Join-Path $env:GITHUB_WORKSPACE build\libiconv\source\include
           $zlibLib = Join-Path $env:GITHUB_WORKSPACE build\zlib
           $zlibInc = Join-Path $env:GITHUB_WORKSPACE build\zlib
+          $xmlLib = Join-Path $env:GITHUB_WORKSPACE build\libxml2\win32\bin.msvc
+          $xmlInc = Join-Path $env:GITHUB_WORKSPACE build\libxml2\include
 
-          Set-Location .\libxml2\win32
-          cscript configure.js lib="$zlibLib;$iconvLib" include="$zlibInc;$iconvInc" vcmanifest=yes zlib=yes
-          # cscript configure.js lib="$env:ZLIB_LIB;$env:ICONV_LIB" include="$env:ZLIB_INC;$env:ICONV_INC" vcmanifest=yes zlib=yes
-          Start-Process -NoNewWindow -Wait nmake libxmla
-          $xmlLib = Join-Path (pwd) bin.msvc
-          $xmlInc = Join-Path (pwd) ..\include
+          Set-Location .\libxslt\win32
+          cscript configure.js lib="$zlibLib;$iconvLib;$xmlLib" include="$zlibInc;$iconvInc;$xmlInc" vcmanifest=yes zlib=yes
+          Start-Process -NoNewWindow -Wait nmake "libxslta libexslta"
         shell: pwsh
 
       - name: Zip the build directory
         run: |
-          Compress-Archive -Path libxml2/* -DestinationPath libxml2.zip -Force
+          Compress-Archive -Path libxslt/* -DestinationPath libxslt.zip -Force
         shell: pwsh
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: libxml2
-          path: libxml2.zip
+          name: libxslt
+          path: libxslt.zip
