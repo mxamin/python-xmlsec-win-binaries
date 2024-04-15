@@ -12,14 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         name: Checkout code
-        with:
-          submodules: 'recursive'
-
-      # - name: Install Pscx Module
-      #   shell: pwsh
-      #   run: |
-      #     Install-Module -Name Pscx -Force -Scope CurrentUser
-      #     Import-Module Pscx
+        # with:
+        #   submodules: 'recursive'
   
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
@@ -186,20 +180,21 @@ jobs:
               Copy-Item -Recurse $inc .\dist\$name\include
               Get-ChildItem -File -Recurse .\dist\$name\include | Where{$_.Name -NotMatch ".h$" } | Remove-Item
 
-              Write-Zip  .\dist\$name .\dist\$name.zip
+              # Write-Zip  .\dist\$name .\dist\$name.zip
+              Compress-Archive -Path .\dist\$name -DestinationPath .\dist\$name.zip
               Remove-Item -Recurse -Path .\dist\$name
           }
 
           if (Test-Path .\dist) { Remove-Item .\dist -Recurse }
           New-Item -ItemType Directory .\dist
-          
+
           # lxml expects iconv to be called iconv, not libiconv
           Dir $iconvLib\libiconv* | Copy-Item -Force -Destination {Join-Path $iconvLib ($_.Name -replace "libiconv","iconv") }
 
           BundleRelease "iconv-1.16-1.$distName" (dir $iconvLib\iconv_a*) (dir $iconvInc\*)
           BundleRelease "libxml2-2.10.3.$distName" (dir $xmlLib\*) (Get-Item $xmlInc\libxml)
-          BundleRelease "libxslt-1.1.37.$distName" (dir $xsltLib\*) (Get-Item .\libxslt\libxslt,.\libxslt\libexslt)
-          BundleRelease "zlib-1.2.12.$distName" (Get-Item .\zlib\*.*) (Get-Item .\zlib\zconf.h,.\zlib\zlib.h)
+          BundleRelease "libxslt-1.1.37.$distName" (dir $xsltLib\*) (Get-Item $xsltInc\libxslt,$xsltInc\libexslt)
+          BundleRelease "zlib-1.2.12.$distName" (Get-Item $zlibLib\*.*) (Get-Item $zlibInc\zconf.h,$zlibInc\zlib.h)
           BundleRelease "openssl-3.0.8.$distName" (dir $sslLib\*) (Get-Item $sslInc\openssl)
           BundleRelease "xmlsec-1.3.4.$distName" (dir $xmlsecLib\*) (Get-Item $xmlsecInc\xmlsec)
         shell: pwsh
