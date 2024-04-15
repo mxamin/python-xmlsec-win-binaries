@@ -54,7 +54,6 @@ src/gnutls/Makefile
 src/nss/Makefile
 src/openssl/Makefile
 win32/apps_a.int/
-win32/binaries/
 win32/configure.txt
 win32/libxmlsec.int/
 win32/libxmlsec_a.int/
