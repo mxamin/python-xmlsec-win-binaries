@@ -93,6 +93,8 @@ jobs:
       #     Set-Location .\libxslt\win32
       #     cscript configure.js lib="$zlibLib;$iconvLib;$xmlLib" include="$zlibInc;$iconvInc;$xmlInc" vcmanifest=yes zlib=yes
       #     Start-Process -NoNewWindow -Wait nmake "libxslta libexslta"
+      #     $xsltLib = Join-Path (pwd) bin.msvc
+      #     $xsltInc = Join-Path (pwd) ..
       #   shell: pwsh
 
       # - name: Build openssl
@@ -136,6 +138,8 @@ jobs:
           $zlibInc = Join-Path $env:GITHUB_WORKSPACE build\zlib
           $xmlLib = Join-Path $env:GITHUB_WORKSPACE build\libxml2\win32\bin.msvc
           $xmlInc = Join-Path $env:GITHUB_WORKSPACE build\libxml2\include
+          $xsltLib = Join-Path $env:GITHUB_WORKSPACE build\libxslt\win32\bin.msvc
+          $xsltInc = Join-Path $env:GITHUB_WORKSPACE build\libxslt
           $sslLib = Join-Path $env:GITHUB_WORKSPACE build\openssl\lib
           $sslInc = Join-Path $env:GITHUB_WORKSPACE build\openssl\include
 
