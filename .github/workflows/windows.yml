@@ -25,48 +25,6 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.arch }}
-          # toolset: 14.0
-
-      # - name: Print MSBuild Version
-      #   shell: cmd
-      #   run: |
-      #     msbuild -version
-
-      # - name: Setup PowerShell
-      #   run: |
-      #     $ErrorActionPreference = 'Stop'  # Stops on errors
-      #     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process  # Temporarily change the execution policy
-
-      # - name: Install Pscx Module
-      #   run: |
-      #     Install-Module -Name Pscx -Repository PSGallery -Force -Scope CurrentUser -AllowClobber
-      #     # Install-Module -Name Pscx
-      #     # Install-Module -Name Pscx -RequiredVersion 4.0.0-beta4 -AllowPrerelease -Force
-      #   shell: pwsh
-
-      # - name: Setup MSVC for Visual Studio 2022
-      #   run: |
-      #     $vsPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
-      #     $vsVarsPath = "${vsPath}\VC\Auxiliary\Build\vcvars64.bat"
-      #     echo "##vso[task.prependpath]$vsPath"
-      #     call $vsVarsPath
-      #   shell: cmd
-
-      # - name: Setup Visual Studio 2022 Environment
-      #   run: |
-      #     Import-VisualStudioVars -VisualStudioVersion 2022 -Architecture ${{ matrix.arch }}
-      #     # Import-Module Pscx
-      #     # $vsVersion = "140"
-      #     # $architecture = "x64"
-      #     # Import-VisualStudioVars -VisualStudioVersion $vsVersion -Architecture $architecture
-      #   shell: pwsh
-
-      # - name: Setup MSBuild path
-      #   run: |
-      #     $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin"
-      #     $env:PATH += ";$vsPath"
-      #     msbuild -version
-      #   shell: pwsh
 
       # - name: Build libiconv
       #   run: |
@@ -123,27 +81,67 @@ jobs:
       #     $xmlInc = Join-Path (pwd) ..\include
       #   shell: pwsh
 
-      - name: Build libxslt
-        run: |
-          $iconvLib = Join-Path $env:GITHUB_WORKSPACE build\libiconv\MSVC16\x64\lib
-          $iconvInc = Join-Path $env:GITHUB_WORKSPACE build\libiconv\source\include
-          $zlibLib = Join-Path $env:GITHUB_WORKSPACE build\zlib
-          $zlibInc = Join-Path $env:GITHUB_WORKSPACE build\zlib
-          $xmlLib = Join-Path $env:GITHUB_WORKSPACE build\libxml2\win32\bin.msvc
-          $xmlInc = Join-Path $env:GITHUB_WORKSPACE build\libxml2\include
+      # - name: Build libxslt
+      #   run: |
+      #     $iconvLib = Join-Path $env:GITHUB_WORKSPACE build\libiconv\MSVC16\x64\lib
+      #     $iconvInc = Join-Path $env:GITHUB_WORKSPACE build\libiconv\source\include
+      #     $zlibLib = Join-Path $env:GITHUB_WORKSPACE build\zlib
+      #     $zlibInc = Join-Path $env:GITHUB_WORKSPACE build\zlib
+      #     $xmlLib = Join-Path $env:GITHUB_WORKSPACE build\libxml2\win32\bin.msvc
+      #     $xmlInc = Join-Path $env:GITHUB_WORKSPACE build\libxml2\include
 
-          Set-Location .\libxslt\win32
-          cscript configure.js lib="$zlibLib;$iconvLib;$xmlLib" include="$zlibInc;$iconvInc;$xmlInc" vcmanifest=yes zlib=yes
-          Start-Process -NoNewWindow -Wait nmake "libxslta libexslta"
+      #     Set-Location .\libxslt\win32
+      #     cscript configure.js lib="$zlibLib;$iconvLib;$xmlLib" include="$zlibInc;$iconvInc;$xmlInc" vcmanifest=yes zlib=yes
+      #     Start-Process -NoNewWindow -Wait nmake "libxslta libexslta"
+      #   shell: pwsh
+
+      - name: Build openssl
+        run: |
+          # $sslTarget = If($x64) { "VC-WIN64A" } Else { "VC-WIN32" }
+          # $sslDo = If($x64) { "do_win64a.bat" } Else { "do_ms.bat" }
+          $sslTarget = "VC-WIN32"
+          $sslDo = "do_ms.bat"
+          if ($env:MATRIX_ARCH -eq 'x64') {
+            $sslTarget = "VC-WIN64A"
+            $sslDo = "do_win64a.bat"
+          }
+
+          Set-Location .\openssl
+          $sslPrefix = Join-Path (pwd) openssldist
+          # Start-Process -NoNewWindow -Wait perl "Configure no-asm enable-static-engine $sslTarget --prefix=$sslPrefix"
+
+          # Start-Process -NoNewWindow -Wait .\ms\$sslDo
+          # Start-Process -NoNewWindow -Wait -PassThru nmake "-f .\ms\nt.mak init lib"
+
+          Start-Process -NoNewWindow -Wait perl "Configure no-asm enable-static-engine $sslTarget --prefix=$sslPrefix"
+          # Start-Process -NoNewWindow -Wait .\ms\$sslDo
+          # Start-Process -NoNewWindow -Wait -PassThru nmake "-f .\ms\nt.mak init lib"
+          # Start-Process -NoNewWindow -Wait -PassThru nmake
+          Start-Process -NoNewWindow -Wait -PassThru nmake "lib"
+          Start-Process -NoNewWindow -Wait -PassThru nmake "install_sw"
+          # Start-Process -NoNewWindow -Wait -PassThru nmake "init lib"
+          
+
+          # $sslLib = Join-Path (pwd) "out32"
+          # $sslInc = Join-Path (pwd) "inc32"
+        env:
+          MATRIX_ARCH: ${{ matrix.arch }}
         shell: pwsh
 
       - name: Zip the build directory
         run: |
-          Compress-Archive -Path libxslt/* -DestinationPath libxslt.zip -Force
+          Compress-Archive -Path openssl/* -DestinationPath openssl.zip -Force
+          # Compress-Archive -Path opensslbuild/* -DestinationPath opensslbuild.zip -Force
         shell: pwsh
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: libxslt
-          path: libxslt.zip
+          name: openssl
+          path: openssl.zip
+
+      # - name: Upload Artifact2
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: opensslbuild
+      #     path: opensslbuild.zip
