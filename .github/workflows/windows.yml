@@ -80,62 +80,47 @@ jobs:
       #     $xmlInc = Join-Path (pwd) ..\include
       #   shell: pwsh
 
-      - name: Build libxslt
-        run: |
-          $iconvLib = Join-Path $env:GITHUB_WORKSPACE build\libiconv\MSVC16\x64\lib
-          $iconvInc = Join-Path $env:GITHUB_WORKSPACE build\libiconv\source\include
-          $zlibLib = Join-Path $env:GITHUB_WORKSPACE build\zlib
-          $zlibInc = Join-Path $env:GITHUB_WORKSPACE build\zlib
-
-          # $xmlLib = Join-Path $env:GITHUB_WORKSPACE build\libxml2\win32\bin.msvc
-          # $xmlInc = Join-Path $env:GITHUB_WORKSPACE build\libxml2\include
-          $xmlLib = Join-Path $env:GITHUB_WORKSPACE builddist\libxml2\lib
-          $xmlInc = Join-Path $env:GITHUB_WORKSPACE builddist\libxml2\include
-
-          $libxsltDist = Join-Path $env:GITHUB_WORKSPACE dist\libxslt
-
-          Set-Location .\libxslt\win32
-          cscript configure.js prefix="$libxsltDist" lib="$zlibLib;$iconvLib;$xmlLib" include="$zlibInc;$iconvInc;$xmlInc" vcmanifest=yes zlib=yes
-          # Start-Process -NoNewWindow -Wait nmake "libxslta libexslta"
-          Start-Process -NoNewWindow -Wait nmake
-          Start-Process -NoNewWindow -Wait nmake install
-          $xsltLib = Join-Path (pwd) bin.msvc
-          $xsltInc = Join-Path (pwd) ..
-        shell: pwsh
-
-      # - name: Build openssl
+      # - name: Build libxslt
       #   run: |
-      #     # $sslTarget = If($x64) { "VC-WIN64A" } Else { "VC-WIN32" }
-      #     # $sslDo = If($x64) { "do_win64a.bat" } Else { "do_ms.bat" }
-      #     $sslTarget = "VC-WIN32"
-      #     $sslDo = "do_ms.bat"
-      #     if ($env:MATRIX_ARCH -eq 'x64') {
-      #       $sslTarget = "VC-WIN64A"
-      #       $sslDo = "do_win64a.bat"
-      #     }
+      #     $iconvLib = Join-Path $env:GITHUB_WORKSPACE build\libiconv\MSVC16\x64\lib
+      #     $iconvInc = Join-Path $env:GITHUB_WORKSPACE build\libiconv\source\include
+      #     $zlibLib = Join-Path $env:GITHUB_WORKSPACE build\zlib
+      #     $zlibInc = Join-Path $env:GITHUB_WORKSPACE build\zlib
 
-      #     Set-Location .\openssl
-      #     $sslPrefix = Join-Path (pwd) openssldist
-      #     # Start-Process -NoNewWindow -Wait perl "Configure no-asm enable-static-engine $sslTarget --prefix=$sslPrefix"
+      #     # $xmlLib = Join-Path $env:GITHUB_WORKSPACE build\libxml2\win32\bin.msvc
+      #     # $xmlInc = Join-Path $env:GITHUB_WORKSPACE build\libxml2\include
+      #     $xmlLib = Join-Path $env:GITHUB_WORKSPACE builddist\libxml2\lib
+      #     $xmlInc = Join-Path $env:GITHUB_WORKSPACE builddist\libxml2\include\libxml2
 
-      #     # Start-Process -NoNewWindow -Wait .\ms\$sslDo
-      #     # Start-Process -NoNewWindow -Wait -PassThru nmake "-f .\ms\nt.mak init lib"
+      #     $libxsltDist = Join-Path $env:GITHUB_WORKSPACE dist\libxslt
 
-      #     # Start-Process -NoNewWindow -Wait perl "Configure no-asm enable-static-engine $sslTarget --prefix=$sslPrefix"
-      #     Start-Process -NoNewWindow -Wait perl "Configure no-asm enable-static-engine no-shared $sslTarget --libdir=lib --prefix=$sslPrefix"
-      #     # Start-Process -NoNewWindow -Wait .\ms\$sslDo
-      #     # Start-Process -NoNewWindow -Wait -PassThru nmake "-f .\ms\nt.mak init lib"
-      #     # Start-Process -NoNewWindow -Wait -PassThru nmake
-      #     # Start-Process -NoNewWindow -Wait -PassThru nmake "lib"
-      #     # Start-Process -NoNewWindow -Wait -PassThru nmake "init lib"
-      #     Start-Process -NoNewWindow -Wait -PassThru nmake
-      #     Start-Process -NoNewWindow -Wait -PassThru nmake "install_sw"
-
-      #     # $sslLib = Join-Path (pwd) "out32"
-      #     # $sslInc = Join-Path (pwd) "inc32"
-      #   env:
-      #     MATRIX_ARCH: ${{ matrix.arch }}
+      #     Set-Location .\libxslt\win32
+      #     cscript configure.js prefix="$libxsltDist" lib="$zlibLib;$iconvLib;$xmlLib" include="$zlibInc;$iconvInc;$xmlInc" vcmanifest=yes zlib=yes
+      #     # Start-Process -NoNewWindow -Wait nmake "libxslta libexslta"
+      #     Start-Process -NoNewWindow -Wait nmake
+      #     Start-Process -NoNewWindow -Wait nmake install
+      #     $xsltLib = Join-Path (pwd) bin.msvc
+      #     $xsltInc = Join-Path (pwd) ..
       #   shell: pwsh
+
+      - name: Build openssl
+        run: |
+          # $sslTarget = If($x64) { "VC-WIN64A" } Else { "VC-WIN32" }
+          $sslTarget = "VC-WIN32"
+          $sslDo = "do_ms.bat"
+          if ($env:MATRIX_ARCH -eq 'x64') {
+            $sslTarget = "VC-WIN64A"
+          }
+
+          $sslDist = Join-Path $env:GITHUB_WORKSPACE dist\openssl
+
+          Set-Location .\openssl
+          Start-Process -NoNewWindow -Wait perl "Configure no-asm enable-static-engine no-shared $sslTarget --libdir=lib --prefix=$sslDist"
+          Start-Process -NoNewWindow -Wait -PassThru nmake
+          Start-Process -NoNewWindow -Wait -PassThru nmake "install_sw"
+        env:
+          MATRIX_ARCH: ${{ matrix.arch }}
+        shell: pwsh
 
       # - name: Build xmlsec
       #   run: |
@@ -214,16 +199,16 @@ jobs:
       #   env:
       #     MATRIX_ARCH: ${{ matrix.arch }}
 
-      - name: Zip the build directory
-        run: |
-          Compress-Archive -Path libxslt/* -DestinationPath libxslt.zip -Force
-        shell: pwsh
+      # - name: Zip the build directory
+      #   run: |
+      #     Compress-Archive -Path libxslt/* -DestinationPath libxslt.zip -Force
+      #   shell: pwsh
 
-      - name: Upload module artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: libxslt
-          path: libxslt.zip
+      # - name: Upload module artifact
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: libxslt
+      #     path: libxslt.zip
 
       - name: Zip the dist directory
         run: |
