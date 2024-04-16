@@ -6,7 +6,7 @@
 #
 
 import sys, os
-import optparse
+import exceptions, optparse
 import libxml2
 
 opa = optparse.OptionParser()
@@ -322,7 +322,7 @@ class XSTCTestCase:
 			sys.stdout.write("'%s'\n" % self.name)
 		try:
 			self.validate()
-		except (Exception, libxml2.parserError, libxml2.treeError) as e:
+		except (Exception, libxml2.parserError, libxml2.treeError), e:
 			self.failExcept(e)
 			
 def parseSchema(fileName):
@@ -359,7 +359,7 @@ class XSTCSchemaTest(XSTCTestCase):
 			if schema is None:
 				self.debugMsg("schema is None")
 				self.debugMsg("checking for IO errors...")
-				if self.isIOError(filePath, "schema"):
+				if self.isIOError(file, "schema"):
 					return
 			self.debugMsg("checking schema result")
 			if (schema is None and self.val) or (schema is not None and self.val == 0):
@@ -614,7 +614,7 @@ class XSTCTestRunner:
 
 	def addToCombines(self, test):
 		found = False
-		if test.combineName in self.combinesRan:
+		if self.combinesRan.has_key(test.combineName):
 			self.combinesRan[test.combineName].append(test)
 		else:
 			self.combinesRan[test.combineName] = [test]

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -u
 #
 # this tests the basic APIs of the XmlTextReader interface
 #

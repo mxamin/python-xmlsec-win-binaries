@@ -1,4 +1,4 @@
-      * Summary: XML Schematron implementation
+      * Summary: XML Schemastron implementation
       * Description: interface to the XML Schematron validity checking.
       *
       * Copy: See Copyright for the status of this software.

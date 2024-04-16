@@ -1,4 +1,4 @@
-exampledir = $(docdir)/python/examples
+exampledir = $(datadir)/doc/libxml2-python-$(LIBXML_VERSION)/examples
 dist_example_DATA = $(PYTESTS) $(XMLS)
 
 PYTESTS=	\
@@ -59,12 +59,11 @@ XMLS=		\
 CLEANFILES = core tmp.xml *.pyc
 
 if WITH_PYTHON
-check-local:
+tests: $(PYTESTS)
 	@for f in $(XMLS) ; do test -f $$f || $(LN_S) $(srcdir)/$$f . ; done
 	@echo "## running Python regression tests"
 	@(export PYTHONPATH="..:../.libs:$(srcdir)/..:$$PYTHONPATH" ; \
 	  export LD_LIBRARY_PATH="$(top_builddir)/.libs:$$LD_LIBRARY_PATH" ; \
-	  export DYLD_LIBRARY_PATH="$(top_builddir)/.libs:$$DYLD_LIBRARY_PATH" ; \
 	  export PATH="$(top_builddir)/.libs:$$PATH" ; \
 	  for test in $(PYTESTS) ; do \
 	    log=`$(PYTHON) $(srcdir)/$$test` ; \
@@ -74,4 +73,6 @@ check-local:
 	      exit 1 ; \
 	    fi ; \
 	  done)
+else
+tests:
 endif

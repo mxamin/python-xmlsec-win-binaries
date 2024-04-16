@@ -1193,6 +1193,6 @@ ConvertInput(const char *in, const char *encoding)
 #else
 int main(void) {
     fprintf(stderr, "Writer or output support not compiled in\n");
-    return 0;
+    exit(1);
 }
 #endif

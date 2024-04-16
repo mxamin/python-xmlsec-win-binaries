@@ -185,6 +185,6 @@ update_xpath_nodes(xmlNodeSetPtr nodes, const xmlChar* value) {
 #else
 int main(void) {
     fprintf(stderr, "XPath support not compiled in\n");
-    return 0;
+    exit(1);
 }
 #endif

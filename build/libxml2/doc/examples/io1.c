@@ -161,6 +161,6 @@ int main(void) {
 #else
 int main(void) {
     fprintf(stderr, "XInclude support not compiled in\n");
-    return(0);
+    exit(1);
 }
 #endif

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -u
 # -*- coding: ISO-8859-1 -*-
 #
 # this tests the basic APIs of the XmlTextReader interface

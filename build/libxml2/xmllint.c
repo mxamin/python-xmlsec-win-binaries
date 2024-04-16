@@ -10,16 +10,19 @@
 
 #include <string.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <assert.h>
-#include <time.h>
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
+
 #ifdef HAVE_SYS_TIMEB_H
 #include <sys/timeb.h>
 #endif
+
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -38,6 +41,9 @@
 #ifndef MAP_FAILED
 #define MAP_FAILED ((void *) -1)
 #endif
+#endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
 #endif
 #ifdef HAVE_LIBREADLINE
 #include <readline/readline.h>
@@ -81,7 +87,7 @@
 #endif
 
 #ifndef XML_XML_DEFAULT_CATALOG
-#define XML_XML_DEFAULT_CATALOG "file://" SYSCONFDIR "/xml/catalog"
+#define XML_XML_DEFAULT_CATALOG "file:///etc/xml/catalog"
 #endif
 
 typedef enum {
@@ -439,13 +445,16 @@ endTimer(const char *fmt, ...)
     msec *= 1000;
     msec += (end.tv_usec - begin.tv_usec) / 1000;
 
+#ifndef HAVE_STDARG_H
+#error "endTimer required stdarg functions"
+#endif
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     va_end(ap);
 
     fprintf(stderr, " took %ld ms\n", msec);
 }
-#else
+#elif defined(HAVE_TIME_H)
 /*
  * No gettimeofday function, so we have to make do with calling clock.
  * This is obviously less accurate, but there's little we can do about
@@ -470,10 +479,43 @@ endTimer(const char *fmt, ...)
     end = clock();
     msec = ((end - begin) * 1000) / CLOCKS_PER_SEC;
 
+#ifndef HAVE_STDARG_H
+#error "endTimer required stdarg functions"
+#endif
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     va_end(ap);
     fprintf(stderr, " took %ld ms\n", msec);
+}
+#else
+
+/*
+ * We don't have a gettimeofday or time.h, so we just don't do timing
+ */
+static void
+startTimer(void)
+{
+    /*
+     * Do nothing
+     */
+}
+static void XMLCDECL LIBXML_ATTR_FORMAT(1,2)
+endTimer(char *format, ...)
+{
+    /*
+     * We cannot do anything because we don't have a timing function
+     */
+#ifdef HAVE_STDARG_H
+    va_list ap;
+    va_start(ap, format);
+    vfprintf(stderr, format, ap);
+    va_end(ap);
+    fprintf(stderr, " was not timed\n");
+#else
+    /* We don't have gettimeofday, time or stdarg.h, what crazy world is
+     * this ?!
+     */
+#endif
 }
 #endif
 /************************************************************************
@@ -2160,7 +2202,13 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
         if ((filename[0] == '-') && (filename[1] == 0)) {
             f = stdin;
         } else {
+#if defined(_WIN32) || defined (__DJGPP__) && !defined (__CYGWIN__)
 	    f = fopen(filename, "rb");
+#elif defined(__OS400__)
+	    f = fopen(filename, "rb");
+#else
+	    f = fopen(filename, "r");
+#endif
         }
         if (f != NULL) {
             int res;
@@ -2228,9 +2276,15 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
 
 	    /* '-' Usually means stdin -<sven@zen.org> */
 	    if ((filename[0] == '-') && (filename[1] == 0)) {
-	        f = stdin;
+	      f = stdin;
 	    } else {
+#if defined(_WIN32) || defined (__DJGPP__) && !defined (__CYGWIN__)
 		f = fopen(filename, "rb");
+#elif defined(__OS400__)
+		f = fopen(filename, "rb");
+#else
+		f = fopen(filename, "r");
+#endif
 	    }
 	    if (f != NULL) {
 		int ret;
@@ -2273,7 +2327,13 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
 	    } else {
 	        FILE *f;
 
+#if defined(_WIN32) || defined (__DJGPP__) && !defined (__CYGWIN__)
 		f = fopen(filename, "rb");
+#elif defined(__OS400__)
+		f = fopen(filename, "rb");
+#else
+		f = fopen(filename, "r");
+#endif
 		if (f != NULL) {
 		    if (rectxt == NULL)
 			doc = xmlReadIO(myRead, myClose, f, filename, NULL,
@@ -3786,14 +3846,12 @@ main(int argc, char **argv) {
 	xmlRelaxNGFree(relaxngschemas);
     if (wxschemas != NULL)
 	xmlSchemaFree(wxschemas);
+    xmlRelaxNGCleanupTypes();
 #endif
 #if defined(LIBXML_READER_ENABLED) && defined(LIBXML_PATTERN_ENABLED)
     if (patternc != NULL)
         xmlFreePattern(patternc);
 #endif
-
-    /* Avoid unused label warning if features are disabled. */
-    goto error;
 
 error:
     xmlCleanupParser();

@@ -1541,7 +1541,7 @@ static int
 xmlOutputBufferWriteBase64(xmlOutputBufferPtr out, int len,
                            const unsigned char *data)
 {
-    static const unsigned char dtable[64] =
+    static unsigned char dtable[64] =
             {'A','B','C','D','E','F','G','H','I','J','K','L','M',
 	     'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
 	     'a','b','c','d','e','f','g','h','i','j','k','l','m',
@@ -1674,7 +1674,7 @@ xmlOutputBufferWriteBinHex(xmlOutputBufferPtr out,
 {
     int count;
     int sum;
-    static const char hex[16] =
+    static char hex[16] =
 	{'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
     int i;
 
@@ -4733,4 +4733,6 @@ xmlTextWriterHandleStateDependencies(xmlTextWriterPtr writer,
     return sum;
 }
 
+#define bottom_xmlwriter
+#include "elfgcchack.h"
 #endif

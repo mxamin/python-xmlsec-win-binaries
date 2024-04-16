@@ -245,6 +245,6 @@ print_xpath_nodes(xmlNodeSetPtr nodes, FILE* output) {
 #else
 int main(void) {
     fprintf(stderr, "XPath support not compiled in\n");
-    return 0;
+    exit(1);
 }
 #endif

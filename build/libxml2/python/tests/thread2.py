@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -u
 import string, sys, time
 try:
     from _thread import get_ident

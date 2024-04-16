@@ -193,7 +193,7 @@ jobs:
       #     Dir $iconvLib\libiconv* | Copy-Item -Force -Destination {Join-Path $iconvLib ($_.Name -replace "libiconv","iconv") }
 
       #     BundleRelease "iconv-1.16-1.$distName" (dir $iconvLib\iconv_a*) (dir $iconvInc\*)
-      #     BundleRelease "libxml2-2.10.3.$distName" (dir $xmlLib\*) (Get-Item $xmlInc\libxml)
+      #     BundleRelease "libxml2-2.9.14.$distName" (dir $xmlLib\*) (Get-Item $xmlInc\libxml)
       #     BundleRelease "libxslt-1.1.37.$distName" (dir $xsltLib\*) (Get-Item $xsltInc\libxslt,$xsltInc\libexslt)
       #     BundleRelease "zlib-1.2.12.$distName" (Get-Item $zlibLib\*.*) (Get-Item $zlibInc\zconf.h,$zlibInc\zlib.h)
       #     BundleRelease "openssl-3.0.8.$distName" (dir $sslLib\*) (Get-Item $sslInc\openssl)

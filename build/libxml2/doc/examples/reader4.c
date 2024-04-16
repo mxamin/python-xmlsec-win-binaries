@@ -117,6 +117,6 @@ int main(int argc, char **argv) {
 #else
 int main(void) {
     fprintf(stderr, "xmlReader support not compiled in\n");
-    return(0);
+    exit(1);
 }
 #endif

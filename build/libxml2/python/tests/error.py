@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -u
 #
 # This test exercise the redirection of error messages with a
 # functions defined in Python.
