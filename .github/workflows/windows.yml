@@ -75,6 +75,7 @@ jobs:
           cscript configure.js compiler=msvc prefix="$libxml2Dist" lib="$zlibLib;$iconvLib" include="$zlibInc;$iconvInc" vcmanifest=yes zlib=yes
           # Start-Process -NoNewWindow -Wait nmake libxmla
           Start-Process -NoNewWindow -Wait nmake "/f Makefile.msvc"
+          Start-Process -NoNewWindow -Wait nmake "/f Makefile.msvc install"
           $xmlLib = Join-Path (pwd) bin.msvc
           $xmlInc = Join-Path (pwd) ..\include
         shell: pwsh
