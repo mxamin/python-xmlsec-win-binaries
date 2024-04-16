@@ -67,12 +67,14 @@ jobs:
           $zlibLib = Join-Path $env:GITHUB_WORKSPACE build\zlib
           $zlibInc = Join-Path $env:GITHUB_WORKSPACE build\zlib
 
+          $libxml2Dist = Join-Path $env:GITHUB_WORKSPACE dist\libxml2
+
           Set-Location .\libxml2\win32
           # cscript configure.js lib="$zlibLib;$iconvLib" include="$zlibInc;$iconvInc" vcmanifest=yes zlib=yes 
           # cscript configure.js lib="$env:ZLIB_LIB;$env:ICONV_LIB" include="$env:ZLIB_INC;$env:ICONV_INC" vcmanifest=yes zlib=yes
-          cscript configure.js compiler=msvc lib="$zlibLib;$iconvLib" include="$zlibInc;$iconvInc" vcmanifest=yes zlib=yes
+          cscript configure.js compiler=msvc prefix="$libxml2Dist" lib="$zlibLib;$iconvLib" include="$zlibInc;$iconvInc" vcmanifest=yes zlib=yes
           # Start-Process -NoNewWindow -Wait nmake libxmla
-          Start-Process -NoNewWindow -Wait nmake "/f Makefile.msvc libxmla"
+          Start-Process -NoNewWindow -Wait nmake "/f Makefile.msvc"
           $xmlLib = Join-Path (pwd) bin.msvc
           $xmlInc = Join-Path (pwd) ..\include
         shell: pwsh
@@ -209,11 +211,22 @@ jobs:
           Compress-Archive -Path libxml2/* -DestinationPath libxml2.zip -Force
         shell: pwsh
 
-      - name: Upload Artifact
+      - name: Upload module artifact
         uses: actions/upload-artifact@v3
         with:
           name: libxml2
           path: libxml2.zip
+
+      - name: Zip the dist directory
+        run: |
+          Compress-Archive -Path dist/* -DestinationPath dist.zip -Force
+        shell: pwsh
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist.zip
 
       # - name: Upload Artifact
       #   uses: actions/upload-artifact@v3
