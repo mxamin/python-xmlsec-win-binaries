@@ -1,0 +1,174 @@
+name: windows
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x86, x64]
+
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout code
+        with:
+          submodules: 'recursive'
+  
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Build openssl
+        run: |
+          $sslDist = Join-Path $env:GITHUB_WORKSPACE dist\openssl
+          $sslTarget = "VC-WIN32"
+          if ($env:MATRIX_ARCH -eq 'x64') {
+            $sslTarget = "VC-WIN64A"
+          }
+
+          Set-Location .\openssl
+          Start-Process -NoNewWindow -Wait perl "Configure no-asm enable-static-engine no-shared $sslTarget --libdir=lib --prefix=$sslDist"
+          Start-Process -NoNewWindow -Wait -PassThru nmake
+          Start-Process -NoNewWindow -Wait -PassThru nmake "install_sw"
+
+          $sslLib = Join-Path $sslDist lib
+          $sslInc = Join-Path $sslDist include
+          Write-Output "SSL_LIB=$sslLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "SSL_INC=$sslInc" | Out-File -FilePath $env:GITHUB_ENV -Append
+        env:
+          MATRIX_ARCH: ${{ matrix.arch }}
+        shell: pwsh
+
+      - name: Build zlib
+        run: |
+          Set-Location .\zlib
+          Start-Process -NoNewWindow -Wait nmake "-f win32/Makefile.msc zlib_a.lib"
+
+          Move-Item zlib_a.lib zlib.lib -force
+
+          $zlibLib = (pwd)
+          $zlibInc = (pwd)
+          Write-Output "ZLIB_LIB=$zlibLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "ZLIB_INC=$zlibInc" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
+      - name: Build libiconv
+        run: |
+          Set-Location .\libiconv\MSVC16
+          msbuild libiconv_static\libiconv_static.vcxproj /p:Configuration=Release
+
+          $platDir = ""
+          if ($env:MATRIX_ARCH -eq 'x64') {
+            $platDir = "\x64"
+          }
+          $iconvLib = Join-Path $env:GITHUB_WORKSPACE "libiconv\MSVC16$platDir\lib"
+          $iconvInc = Join-Path $env:GITHUB_WORKSPACE libiconv\source\include
+          Write-Output "ICONV_LIB=$iconvLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "ICONV_INC=$iconvInc" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+          # libxml2  expect iconv be called iconv.lib not libiconv_a.lib
+          $iconvLibFile = Join-Path $iconvLib libiconv_a.lib
+          $iconvLibNewFile = Join-Path $iconvLib iconv.lib
+          Copy-Item -Path "$iconvLibFile" -Destination "$iconvLibNewFile"
+
+          # lxml expects iconv to be called iconv, not libiconv
+          Dir $iconvLib\libiconv* | Copy-Item -Force -Destination {Join-Path $iconvLib ($_.Name -replace "libiconv","iconv") }
+        env:
+          MATRIX_ARCH: ${{ matrix.arch }}
+        shell: pwsh
+
+      - name: Build libxml2
+        run: |
+          $libxml2Dist = Join-Path $env:GITHUB_WORKSPACE dist\libxml2
+
+          Set-Location .\libxml2\win32
+          cscript configure.js compiler=msvc prefix="$libxml2Dist" lib="$env:ZLIB_LIB;$env:ICONV_LIB" include="$env:ZLIB_INC;$env:ICONV_INC" vcmanifest=yes zlib=yes
+          Start-Process -NoNewWindow -Wait nmake "/f Makefile.msvc"
+          Start-Process -NoNewWindow -Wait nmake "/f Makefile.msvc install"
+
+          $xmlLib = Join-Path $libxml2Dist lib
+          $xmlInc = Join-Path $libxml2Dist include\libxml2
+          Write-Output "XML_LIB=$xmlLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "XML_INC=$xmlInc" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
+      - name: Build libxslt
+        run: |
+          $xsltDist = Join-Path $env:GITHUB_WORKSPACE dist\libxslt
+
+          Set-Location .\libxslt\win32
+          cscript configure.js prefix="$xsltDist" lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC" vcmanifest=yes zlib=yes
+          Start-Process -NoNewWindow -Wait nmake
+          Start-Process -NoNewWindow -Wait nmake install
+
+          $xsltLib = Join-Path $xsltDist lib
+          $xsltInc = Join-Path $xsltDist include
+          Write-Output "XSLT_LIB=$xsltLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "XSLT_INC=$xsltInc" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
+      - name: Build xmlsec
+        run: |
+          Set-Location .\xmlsec\win32
+          cscript configure.js lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" iconv=yes xslt=yes unicode=yes static=yes with-dl=no legacy-crypto=yes
+          Start-Process -NoNewWindow -Wait -PassThru nmake xmlseca
+
+          $xmlsecLib = Join-Path $env:GITHUB_WORKSPACE xmlsec\win32\binaries
+          $xmlsecInc = Join-Path $env:GITHUB_WORKSPACE xmlsec\include
+          Write-Output "XMLSEC_LIB=$xmlsecLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "XMLSEC_INC=$xmlsecInc" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
+      - name: Bundle release
+        run: |
+          # Update versions in case you changed submodules tags
+          $iconvVer = "1.16-1"
+          $xmlVer = "2.11.7"
+          $xsltVer = "1.1.37"
+          $zlibVer = "1.2.12"
+          $sslVer = "3.0.8"
+          $xmlsecVer = "1.3.4"
+
+          $distBundleDir = "dist_bundle"
+          Write-Output "DIST_BUNDLE_DIR=$distBundleDir" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+          $distName = "win32"
+          if ($env:MATRIX_ARCH -eq 'x64') {
+            $distName = "win64"
+          }
+
+          Function BundleRelease($name, $lib, $inc)
+          {
+              New-Item -ItemType Directory .\$distBundleDir\$name
+
+              New-Item -ItemType Directory .\$distBundleDir\$name\lib
+              Copy-Item -Recurse $lib .\$distBundleDir\$name\lib
+              Get-ChildItem -File -Recurse .\$distBundleDir\$name\lib | Where{$_.Name -NotMatch ".(lib|pdb)$" } | Remove-Item
+
+              New-Item -ItemType Directory .\$distBundleDir\$name\include
+              Copy-Item -Recurse $inc .\$distBundleDir\$name\include
+              Get-ChildItem -File -Recurse .\$distBundleDir\$name\include | Where{$_.Name -NotMatch ".h$" } | Remove-Item
+
+              Compress-Archive -Path .\$distBundleDir\$name -DestinationPath .\$distBundleDir\$name.zip
+              Remove-Item -Recurse -Path .\$distBundleDir\$name
+          }
+
+          if (Test-Path .\$distBundleDir) { Remove-Item .\$distBundleDir -Recurse }
+          New-Item -ItemType Directory .\$distBundleDir
+
+          BundleRelease "iconv-$iconvVer.$distName" (dir $env:ICONV_LIB\iconv_a*) (dir $env:ICONV_INC\*)
+          BundleRelease "libxml2-$xmlVer.$distName" (dir $env:XML_LIB\*) (Get-Item $env:XML_INC\libxml)
+          BundleRelease "libxslt-$xsltVer.$distName" (dir $env:XSLT_LIB\*) (Get-Item $env:XSLT_INC\libxslt,$env:XSLT_INC\libexslt)
+          BundleRelease "zlib-$zlibVer.$distName" (Get-Item $env:ZLIB_LIB\*.*) (Get-Item $env:ZLIB_INC\zconf.h,$env:ZLIB_INC\zlib.h)
+          BundleRelease "openssl-$sslVer.$distName" (dir $env:SSL_LIB\*) (Get-Item $env:SSL_INC\openssl)
+          BundleRelease "xmlsec-$xmlsecVer.$distName" (dir $env:XMLSEC_LIB\*) (Get-Item $env:XMLSEC_INC\xmlsec)
+        shell: pwsh
+        env:
+          MATRIX_ARCH: ${{ matrix.arch }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: bundle-release
+          path: ${{ env.DIST_BUNDLE_DIR }}

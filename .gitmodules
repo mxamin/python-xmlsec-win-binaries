@@ -1,9 +1,6 @@
 [submodule "libiconv"]
 	path = libiconv
 	url = https://github.com/winlibs/libiconv
-[submodule "libxml2"]
-	path = libxml2
-	url = https://github.com/winlibs/libxml2
 [submodule "libxslt"]
 	path = libxslt
 	url = https://github.com/winlibs/libxslt
@@ -16,3 +13,6 @@
 [submodule "xmlsec"]
 	path = xmlsec
 	url = https://github.com/lsh123/xmlsec
+[submodule "libxml2"]
+	path = libxml2
+	url = https://github.com/GNOME/libxml2
