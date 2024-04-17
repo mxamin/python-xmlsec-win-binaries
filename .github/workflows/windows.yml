@@ -20,26 +20,26 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
-      - name: Build openssl
-        run: |
-          $sslDist = Join-Path $env:GITHUB_WORKSPACE dist\openssl
-          $sslTarget = "VC-WIN32"
-          if ($env:MATRIX_ARCH -eq 'x64') {
-            $sslTarget = "VC-WIN64A"
-          }
+      # - name: Build openssl
+      #   run: |
+      #     $sslDist = Join-Path $env:GITHUB_WORKSPACE dist\openssl
+      #     $sslTarget = "VC-WIN32"
+      #     if ($env:MATRIX_ARCH -eq 'x64') {
+      #       $sslTarget = "VC-WIN64A"
+      #     }
 
-          Set-Location .\openssl
-          Start-Process -NoNewWindow -Wait perl "Configure no-asm enable-static-engine no-shared $sslTarget --libdir=lib --prefix=$sslDist"
-          Start-Process -NoNewWindow -Wait -PassThru nmake
-          Start-Process -NoNewWindow -Wait -PassThru nmake "install_sw"
+      #     Set-Location .\openssl
+      #     Start-Process -NoNewWindow -Wait perl "Configure no-asm enable-static-engine no-shared $sslTarget --libdir=lib --prefix=$sslDist"
+      #     Start-Process -NoNewWindow -Wait -PassThru nmake
+      #     Start-Process -NoNewWindow -Wait -PassThru nmake "install_sw"
 
-          $sslLib = Join-Path $sslDist lib
-          $sslInc = Join-Path $sslDist include
-          Write-Output "SSL_LIB=$sslLib" | Out-File -FilePath $env:GITHUB_ENV -Append
-          Write-Output "SSL_INC=$sslInc" | Out-File -FilePath $env:GITHUB_ENV -Append
-        env:
-          MATRIX_ARCH: ${{ matrix.arch }}
-        shell: pwsh
+      #     $sslLib = Join-Path $sslDist lib
+      #     $sslInc = Join-Path $sslDist include
+      #     Write-Output "SSL_LIB=$sslLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+      #     Write-Output "SSL_INC=$sslInc" | Out-File -FilePath $env:GITHUB_ENV -Append
+      #   env:
+      #     MATRIX_ARCH: ${{ matrix.arch }}
+      #   shell: pwsh
 
       - name: Build zlib
         run: |
@@ -107,7 +107,7 @@ jobs:
           Start-Process -NoNewWindow -Wait nmake install
 
           $xsltLib = Join-Path $xsltDist lib
-          $xsltInc = Join-Path xsltDist include
+          $xsltInc = Join-Path $xsltDist include
           Write-Output "XSLT_LIB=$xsltLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Output "XSLT_INC=$xsltInc" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
@@ -118,8 +118,8 @@ jobs:
           cscript configure.js lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" iconv=yes xslt=yes unicode=yes static=yes with-dl=no legacy-crypto=yes
           Start-Process -NoNewWindow -Wait -PassThru nmake xmlseca
 
-          $xmlsecLib = Join-Path $env:GITHUB_WORKSPACE build\xmlsec\win32\binaries
-          $xmlsecInc = Join-Path $env:GITHUB_WORKSPACE build\xmlsec\include
+          $xmlsecLib = Join-Path $env:GITHUB_WORKSPACE xmlsec\win32\binaries
+          $xmlsecInc = Join-Path $env:GITHUB_WORKSPACE xmlsec\include
           Write-Output "XMLSEC_LIB=$xmlsecLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Output "XMLSEC_INC=$xmlsecInc" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
