@@ -168,7 +168,7 @@ jobs:
           MATRIX_ARCH: ${{ matrix.arch }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bundle-release
           path: ${{ env.DIST_BUNDLE_DIR }}
