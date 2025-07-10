@@ -5,11 +5,12 @@ jobs:
   build:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
-        arch: [x86, x64]
+        arch: [x86, x64, amd64_arm64]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         name: Checkout code
         with:
           submodules: 'recursive'
@@ -25,6 +26,9 @@ jobs:
           $sslTarget = "VC-WIN32"
           if ($env:MATRIX_ARCH -eq 'x64') {
             $sslTarget = "VC-WIN64A"
+          }
+          if ($env:MATRIX_ARCH -eq 'amd64_arm64') {
+            $sslTarget = "VC-WIN64-ARM"
           }
 
           Set-Location .\openssl
@@ -55,21 +59,24 @@ jobs:
 
       - name: Build libiconv
         run: |
-          Set-Location .\libiconv\MSVC16
+          Set-Location .\libiconv\MSVC17
           msbuild libiconv_static\libiconv_static.vcxproj /p:Configuration=Release
 
           $platDir = "Win32"
           if ($env:MATRIX_ARCH -eq 'x64') {
             $platDir = "x64"
           }
-          $iconvLib = Join-Path $env:GITHUB_WORKSPACE "libiconv\MSVC16\$platDir\lib"
+          if ($env:MATRIX_ARCH -eq 'amd64_arm64') {
+            $platDir = "arm64"
+          }
+          $iconvLib = Join-Path $env:GITHUB_WORKSPACE "libiconv\MSVC17\$platDir\lib"
           $iconvInc = Join-Path $env:GITHUB_WORKSPACE libiconv\source\include
           Write-Output "ICONV_LIB=$iconvLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Output "ICONV_INC=$iconvInc" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-          # libxml2  expect iconv be called iconv.lib not libiconv_a.lib
+          # libxml2  expect iconv be called libiconv.lib not libiconv_a.lib
           $iconvLibFile = Join-Path $iconvLib libiconv_a.lib
-          $iconvLibNewFile = Join-Path $iconvLib iconv.lib
+          $iconvLibNewFile = Join-Path $iconvLib libiconv.lib
           Copy-Item -Path "$iconvLibFile" -Destination "$iconvLibNewFile"
 
           # lxml expects iconv to be called iconv, not libiconv
@@ -111,7 +118,9 @@ jobs:
       - name: Build xmlsec
         run: |
           Set-Location .\xmlsec\win32
-          cscript configure.js lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" iconv=yes xslt=yes unicode=yes static=yes with-dl=no legacy-crypto=yes
+          # crypto=openssl because mscng doesn't support sha224. See also https://github.com/lsh123/xmlsec/issues/935
+          # werror=no is a temporary workaround for: 'LIBXML_ICONV_ENABLED': macro redefinition
+          cscript configure.js lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" crypto=openssl iconv=yes xslt=yes unicode=yes static=yes with-dl=no legacy-features=yes werror=no
           Start-Process -NoNewWindow -Wait -PassThru nmake xmlseca
 
           $xmlsecLib = Join-Path $env:GITHUB_WORKSPACE xmlsec\win32\binaries
@@ -123,12 +132,12 @@ jobs:
       - name: Bundle release
         run: |
           # Update versions in case you changed submodules tags
-          $iconvVer = "1.16-1"
-          $xmlVer = "2.11.7"
-          $xsltVer = "1.1.37"
-          $zlibVer = "1.2.12"
-          $sslVer = "3.0.8"
-          $xmlsecVer = "1.3.4"
+          $iconvVer = "1.18-1"
+          $xmlVer = "2.11.9-3"
+          $xsltVer = "1.1.39"
+          $zlibVer = "1.3.1"
+          $sslVer = "3.0.16.pl1"
+          $xmlsecVer = "1.3.7"
 
           $distBundleDir = "dist_bundle"
           Write-Output "DIST_BUNDLE_DIR=$distBundleDir" | Out-File -FilePath $env:GITHUB_ENV -Append
@@ -136,6 +145,9 @@ jobs:
           $distName = "win32"
           if ($env:MATRIX_ARCH -eq 'x64') {
             $distName = "win64"
+          }
+          if ($env:MATRIX_ARCH -eq 'amd64_arm64') {
+            $distName = "win-arm64"
           }
 
           Function BundleRelease($name, $lib, $inc)
@@ -168,7 +180,7 @@ jobs:
           MATRIX_ARCH: ${{ matrix.arch }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: bundle-release
+          name: bundle-release-${{ matrix.arch }}
           path: ${{ env.DIST_BUNDLE_DIR }}

@@ -15,4 +15,4 @@
 	url = https://github.com/lsh123/xmlsec
 [submodule "libxml2"]
 	path = libxml2
-	url = https://github.com/GNOME/libxml2
+	url = https://github.com/winlibs/libxml2
