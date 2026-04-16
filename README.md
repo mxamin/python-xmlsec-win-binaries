@@ -21,7 +21,7 @@ Show the current tag for one submodule:
 git -C xmlsec describe --tags --always
 ```
 
-## Update A Submodule
+## Update a Submodule
 
 Example: bump `xmlsec` to a newer upstream tag.
 
