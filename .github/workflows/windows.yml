@@ -10,13 +10,13 @@ jobs:
         arch: [x86, x64, amd64_arm64]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         name: Checkout code
         with:
           submodules: 'recursive'
   
       - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
           arch: ${{ matrix.arch }}
 
@@ -191,7 +191,7 @@ jobs:
           MATRIX_ARCH: ${{ matrix.arch }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bundle-release-${{ matrix.arch }}
           path: ${{ env.DIST_BUNDLE_DIR }}
