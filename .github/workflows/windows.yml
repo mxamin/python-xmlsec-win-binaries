@@ -59,15 +59,26 @@ jobs:
 
       - name: Build libiconv
         run: |
+          $platform = "Win32"
+          if ($env:MATRIX_ARCH -eq 'x64') {
+            $platform = "x64"
+          }
+          if ($env:MATRIX_ARCH -eq 'amd64_arm64') {
+            $platform = "ARM64"
+          }
+
           Set-Location .\libiconv\MSVC17
-          msbuild libiconv_static\libiconv_static.vcxproj /p:Configuration=Release
+          msbuild libiconv_static\libiconv_static.vcxproj /p:Configuration=Release /p:Platform=$platform /p:WindowsTargetPlatformVersion=10.0
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
           $platDir = "Win32"
           if ($env:MATRIX_ARCH -eq 'x64') {
             $platDir = "x64"
           }
           if ($env:MATRIX_ARCH -eq 'amd64_arm64') {
-            $platDir = "arm64"
+            $platDir = "ARM64"
           }
           $iconvLib = Join-Path $env:GITHUB_WORKSPACE "libiconv\MSVC17\$platDir\lib"
           $iconvInc = Join-Path $env:GITHUB_WORKSPACE libiconv\source\include
