@@ -111,6 +111,7 @@ jobs:
 
           $xmlLib = Join-Path $libxml2Dist lib
           $xmlInc = Join-Path $libxml2Dist include\libxml2
+          Copy-Item -Force (Join-Path $xmlLib libxml2_a.lib) (Join-Path $xmlLib libxml2s.lib)
           Write-Output "XML_LIB=$xmlLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Output "XML_INC=$xmlInc" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
@@ -126,6 +127,7 @@ jobs:
 
           $xsltLib = Join-Path $xsltDist lib
           $xsltInc = Join-Path $xsltDist include
+          Copy-Item -Force (Join-Path $xsltLib libxslt_a.lib) (Join-Path $xsltLib libxslts.lib)
           Write-Output "XSLT_LIB=$xsltLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Output "XSLT_INC=$xsltInc" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
@@ -137,17 +139,17 @@ jobs:
           Set-Location .\xmlsec\win32
           # crypto=openssl because mscng doesn't support sha224. See also https://github.com/lsh123/xmlsec/issues/935
           # werror=no is a temporary workaround for: 'LIBXML_ICONV_ENABLED': macro redefinition
-          & cscript configure.js prefix="$xmlsecDist" lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" cruntime=/MD crypto=openssl iconv=yes xslt=yes unicode=yes static=yes with-dl=no legacy-features=yes werror=no
+          & cscript configure.js prefix="$xmlsecDist" lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" cruntime=/MD crypto=openssl iconv=yes xslt=yes unicode=yes static=yes legacy-features=yes pedantic=no
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
 
-          & nmake
+          & nmake "LIBS=zlib.lib"
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
 
-          & nmake install
+          & nmake install "LIBS=zlib.lib"
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
