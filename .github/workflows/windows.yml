@@ -1,6 +1,10 @@
 name: windows
 on: [push, pull_request]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
@@ -10,13 +14,13 @@ jobs:
         arch: [x86, x64, amd64_arm64]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         name: Checkout code
         with:
           submodules: 'recursive'
   
       - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
           arch: ${{ matrix.arch }}
 
@@ -59,15 +63,26 @@ jobs:
 
       - name: Build libiconv
         run: |
+          $platform = "Win32"
+          if ($env:MATRIX_ARCH -eq 'x64') {
+            $platform = "x64"
+          }
+          if ($env:MATRIX_ARCH -eq 'amd64_arm64') {
+            $platform = "ARM64"
+          }
+
           Set-Location .\libiconv\MSVC17
-          msbuild libiconv_static\libiconv_static.vcxproj /p:Configuration=Release
+          msbuild libiconv_static\libiconv_static.vcxproj /p:Configuration=Release /p:Platform=$platform /p:WindowsTargetPlatformVersion=10.0
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
           $platDir = "Win32"
           if ($env:MATRIX_ARCH -eq 'x64') {
             $platDir = "x64"
           }
           if ($env:MATRIX_ARCH -eq 'amd64_arm64') {
-            $platDir = "arm64"
+            $platDir = "ARM64"
           }
           $iconvLib = Join-Path $env:GITHUB_WORKSPACE "libiconv\MSVC17\$platDir\lib"
           $iconvInc = Join-Path $env:GITHUB_WORKSPACE libiconv\source\include
@@ -96,6 +111,7 @@ jobs:
 
           $xmlLib = Join-Path $libxml2Dist lib
           $xmlInc = Join-Path $libxml2Dist include\libxml2
+          Copy-Item -Force (Join-Path $xmlLib libxml2_a.lib) (Join-Path $xmlLib libxml2s.lib)
           Write-Output "XML_LIB=$xmlLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Output "XML_INC=$xmlInc" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
@@ -111,20 +127,35 @@ jobs:
 
           $xsltLib = Join-Path $xsltDist lib
           $xsltInc = Join-Path $xsltDist include
+          Copy-Item -Force (Join-Path $xsltLib libxslt_a.lib) (Join-Path $xsltLib libxslts.lib)
           Write-Output "XSLT_LIB=$xsltLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Output "XSLT_INC=$xsltInc" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
 
       - name: Build xmlsec
         run: |
+          $xmlsecDist = Join-Path $env:GITHUB_WORKSPACE dist\xmlsec
+
           Set-Location .\xmlsec\win32
           # crypto=openssl because mscng doesn't support sha224. See also https://github.com/lsh123/xmlsec/issues/935
           # werror=no is a temporary workaround for: 'LIBXML_ICONV_ENABLED': macro redefinition
-          cscript configure.js lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" crypto=openssl iconv=yes xslt=yes unicode=yes static=yes with-dl=no legacy-features=yes werror=no
-          Start-Process -NoNewWindow -Wait -PassThru nmake xmlseca
+          & cscript configure.js prefix="$xmlsecDist" lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" cruntime=/MD crypto=openssl iconv=yes xslt=yes unicode=yes static=yes legacy-features=yes pedantic=no
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
-          $xmlsecLib = Join-Path $env:GITHUB_WORKSPACE xmlsec\win32\binaries
-          $xmlsecInc = Join-Path $env:GITHUB_WORKSPACE xmlsec\include
+          & nmake "LIBS=zlib.lib"
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+          & nmake install "LIBS=zlib.lib"
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+          $xmlsecLib = Join-Path $xmlsecDist lib
+          $xmlsecInc = Join-Path $xmlsecDist include
           Write-Output "XMLSEC_LIB=$xmlsecLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Output "XMLSEC_INC=$xmlsecInc" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
@@ -136,8 +167,8 @@ jobs:
           $xmlVer = "2.11.9-3"
           $xsltVer = "1.1.39"
           $zlibVer = "1.3.1"
-          $sslVer = "3.0.16.pl1"
-          $xmlsecVer = "1.3.7"
+          $sslVer = "3.5.6"
+          $xmlsecVer = "1.3.10"
 
           $distBundleDir = "dist_bundle"
           Write-Output "DIST_BUNDLE_DIR=$distBundleDir" | Out-File -FilePath $env:GITHUB_ENV -Append
@@ -180,7 +211,7 @@ jobs:
           MATRIX_ARCH: ${{ matrix.arch }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bundle-release-${{ matrix.arch }}
           path: ${{ env.DIST_BUNDLE_DIR }}
