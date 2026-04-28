@@ -168,7 +168,7 @@ jobs:
           $xsltVer = "1.1.39"
           $zlibVer = "1.3.1"
           $sslVer = "3.5.6"
-          $xmlsecVer = "1.3.10"
+          $xmlsecVer = "1.3.11"
 
           $distBundleDir = "dist_bundle"
           Write-Output "DIST_BUNDLE_DIR=$distBundleDir" | Out-File -FilePath $env:GITHUB_ENV -Append
