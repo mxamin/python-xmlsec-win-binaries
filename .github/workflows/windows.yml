@@ -71,7 +71,7 @@ jobs:
             $platform = "ARM64"
           }
 
-          Set-Location .\libiconv\MSVC17
+          Set-Location .\libiconv\MSVC18
           msbuild libiconv_static\libiconv_static.vcxproj /p:Configuration=Release /p:Platform=$platform /p:WindowsTargetPlatformVersion=10.0
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
@@ -84,7 +84,7 @@ jobs:
           if ($env:MATRIX_ARCH -eq 'amd64_arm64') {
             $platDir = "ARM64"
           }
-          $iconvLib = Join-Path $env:GITHUB_WORKSPACE "libiconv\MSVC17\$platDir\lib"
+          $iconvLib = Join-Path $env:GITHUB_WORKSPACE "libiconv\MSVC18\$platDir\lib"
           $iconvInc = Join-Path $env:GITHUB_WORKSPACE libiconv\source\include
           Write-Output "ICONV_LIB=$iconvLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Output "ICONV_INC=$iconvInc" | Out-File -FilePath $env:GITHUB_ENV -Append
