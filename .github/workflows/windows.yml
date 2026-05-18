@@ -7,7 +7,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     strategy:
       fail-fast: false
       matrix:
@@ -71,7 +71,7 @@ jobs:
             $platform = "ARM64"
           }
 
-          Set-Location .\libiconv\MSVC17
+          Set-Location .\libiconv\MSVC18
           msbuild libiconv_static\libiconv_static.vcxproj /p:Configuration=Release /p:Platform=$platform /p:WindowsTargetPlatformVersion=10.0
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
@@ -84,7 +84,7 @@ jobs:
           if ($env:MATRIX_ARCH -eq 'amd64_arm64') {
             $platDir = "ARM64"
           }
-          $iconvLib = Join-Path $env:GITHUB_WORKSPACE "libiconv\MSVC17\$platDir\lib"
+          $iconvLib = Join-Path $env:GITHUB_WORKSPACE "libiconv\MSVC18\$platDir\lib"
           $iconvInc = Join-Path $env:GITHUB_WORKSPACE libiconv\source\include
           Write-Output "ICONV_LIB=$iconvLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Output "ICONV_INC=$iconvInc" | Out-File -FilePath $env:GITHUB_ENV -Append
@@ -163,7 +163,7 @@ jobs:
       - name: Bundle release
         run: |
           # Update versions in case you changed submodules tags
-          $iconvVer = "1.18-1"
+          $iconvVer = "1.19-1"
           $xmlVer = "2.11.9-3"
           $xsltVer = "1.1.39"
           $zlibVer = "1.3.1"
