@@ -160,6 +160,48 @@ jobs:
           Write-Output "XMLSEC_INC=$xmlsecInc" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
 
+      - name: Check libs for /GL objects
+        run: |
+          # Objects compiled with /GL hold intermediate code that only the exact same MSVC build can link,
+          # which breaks python-xmlsec as soon as the runner's MSVC version changes.
+          # dumpbin reports such objects as "ANON OBJECT".
+          $libSets = [ordered]@{
+            iconv   = Get-ChildItem -File $env:ICONV_LIB\iconv_a*.lib
+            libxml2 = Get-ChildItem -File -Recurse $env:XML_LIB -Filter *.lib
+            libxslt = Get-ChildItem -File -Recurse $env:XSLT_LIB -Filter *.lib
+            zlib    = Get-ChildItem -File $env:ZLIB_LIB -Filter *.lib
+            openssl = Get-ChildItem -File -Recurse $env:SSL_LIB -Filter *.lib
+            xmlsec  = Get-ChildItem -File -Recurse $env:XMLSEC_LIB -Filter *.lib
+          }
+
+          $failed = $false
+          foreach ($name in $libSets.Keys) {
+            if (-not $libSets[$name]) {
+              Write-Output "::error::No .lib files found for $name"
+              $failed = $true
+              continue
+            }
+            foreach ($lib in $libSets[$name]) {
+              $headers = & dumpbin /headers $lib.FullName
+              if ($LASTEXITCODE -ne 0) {
+                Write-Output "::error::dumpbin failed on $($lib.FullName)"
+                $failed = $true
+                continue
+              }
+              $glCount = @($headers | Select-String -SimpleMatch "ANON OBJECT").Count
+              if ($glCount -gt 0) {
+                Write-Output "::error::$($lib.FullName) contains $glCount /GL (ANON OBJECT) members"
+                $failed = $true
+              } else {
+                Write-Output "OK $($lib.FullName)"
+              }
+            }
+          }
+          if ($failed) {
+            exit 1
+          }
+        shell: pwsh
+
       - name: Bundle release
         run: |
           # Update versions in case you changed submodules tags
