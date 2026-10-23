@@ -76,6 +76,8 @@ After changing any submodule tag, update the corresponding version string in `.g
 
 ## Notes
 
+- The bundles are plain C libraries and don't depend on the Python version, so the same release serves every CPython version python-xmlsec supports.
+- Keep `libxml2` on the same upstream version as lxml's Windows build (see https://github.com/lxml/libxml2-win-binaries). Otherwise python-xmlsec fails at import with `lxml & xmlsec libxml2 library version mismatch`.
 - Prefer checking out explicit release tags or commits instead of using `git submodule update --remote`, since this repository is maintained with pinned versions.
 - `git add <submodule>` in the parent repository does not add the submodule files. It records the new submodule commit pointer.
 
