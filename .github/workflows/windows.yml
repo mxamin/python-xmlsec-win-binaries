@@ -1,5 +1,8 @@
 name: windows
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
@@ -168,7 +171,7 @@ jobs:
           $xsltVer = "1.1.45"
           $zlibVer = "1.3.2"
           $sslVer = "3.5.9"
-          $xmlsecVer = "1.3.12"
+          $xmlsecVer = "1.3.13"
 
           $distBundleDir = "dist_bundle"
           Write-Output "DIST_BUNDLE_DIR=$distBundleDir" | Out-File -FilePath $env:GITHUB_ENV -Append
