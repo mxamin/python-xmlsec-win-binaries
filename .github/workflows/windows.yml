@@ -142,7 +142,7 @@ jobs:
           Set-Location .\xmlsec\win32
           # crypto=openssl because mscng doesn't support sha224. See also https://github.com/lsh123/xmlsec/issues/935
           # werror=no is a temporary workaround for: 'LIBXML_ICONV_ENABLED': macro redefinition
-          & .\configure.ps1 prefix="$xmlsecDist" lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" cruntime=/MD crypto=openssl iconv=yes xslt=yes unicode=yes static=yes legacy-features=yes pedantic=no
+          & pwsh -NoProfile -File .\configure.ps1 prefix="$xmlsecDist" lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" cruntime=/MD crypto=openssl iconv=yes xslt=yes unicode=yes static=yes legacy-features=yes pedantic=no
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
