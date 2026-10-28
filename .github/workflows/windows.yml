@@ -1,5 +1,8 @@
 name: windows
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
@@ -139,17 +142,17 @@ jobs:
           Set-Location .\xmlsec\win32
           # crypto=openssl because mscng doesn't support sha224. See also https://github.com/lsh123/xmlsec/issues/935
           # werror=no is a temporary workaround for: 'LIBXML_ICONV_ENABLED': macro redefinition
-          & cscript configure.js prefix="$xmlsecDist" lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" cruntime=/MD crypto=openssl iconv=yes xslt=yes unicode=yes static=yes legacy-features=yes pedantic=no
+          & pwsh -NoProfile -File .\configure.ps1 prefix="$xmlsecDist" lib="$env:ZLIB_LIB;$env:ICONV_LIB;$env:XML_LIB;$env:SSL_LIB;$env:XSLT_LIB" include="$env:ZLIB_INC;$env:ICONV_INC;$env:XML_INC;$env:SSL_INC;$env:XSLT_INC" cruntime=/MD crypto=openssl iconv=yes xslt=yes unicode=yes static=yes legacy-features=yes pedantic=no
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
 
-          & nmake "LIBS=zlib.lib"
+          & nmake "LIBS=zlib.lib bcrypt.lib ws2_32.lib"
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
 
-          & nmake install "LIBS=zlib.lib"
+          & nmake install "LIBS=zlib.lib bcrypt.lib ws2_32.lib"
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
@@ -168,7 +171,7 @@ jobs:
           $xsltVer = "1.1.45"
           $zlibVer = "1.3.2"
           $sslVer = "3.5.9"
-          $xmlsecVer = "1.3.12"
+          $xmlsecVer = "1.3.13"
 
           $distBundleDir = "dist_bundle"
           Write-Output "DIST_BUNDLE_DIR=$distBundleDir" | Out-File -FilePath $env:GITHUB_ENV -Append
