@@ -147,12 +147,12 @@ jobs:
             exit $LASTEXITCODE
           }
 
-          & nmake "LIBS=zlib.lib"
+          & nmake "LIBS=zlib.lib bcrypt.lib ws2_32.lib"
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
 
-          & nmake install "LIBS=zlib.lib"
+          & nmake install "LIBS=zlib.lib bcrypt.lib ws2_32.lib"
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
